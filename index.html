@@ -84,7 +84,7 @@
         .sched-match.player-match { background: #fffbdd; border-left: 4px solid #ffcc00; }
         .sched-score { font-weight: 900; background: #eee; padding: 3px 8px; border-radius: 4px; min-width: 45px; text-align: center; }
 
-        /* --- VISUAL PITCH SECTORS CONFIG --- */
+        /* --- PITCH SECTORS CONFIG --- */
         .pitch-container { flex: 1; height: 100%; background-color: #2e7d32; border-radius: 12px; border: 4px solid #ffffff; position: relative; overflow: hidden; display: flex; }
         .pitch-sector-overlay { position: absolute; top: 0; height: 100%; width: 33.33%; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: rgba(255,255,255,0.25); font-weight: 900; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; pointer-events: none; }
         .sector-def { left: 0; border-right: 2px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.03); }
@@ -202,11 +202,11 @@
                 <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
                     <div id="dash-status-msg" style="color:#666; font-weight:bold; margin-right: 15px;"></div>
                     
-                    <div id="match-actions" style="display:flex; gap:10px;">
+                    <div id="match-actions" style="display:none; gap:10px;">
                         <button class="action-btn btn-sim" id="btn-quick-sim" style="width: auto; padding: 10px 15px;">Quick Sim Round</button>
                         <button class="action-btn" id="btn-play-text-match" style="width: auto; padding: 10px 15px; background-color: #ff9800; color: white;">Play Live Match</button>
                     </div>
-                    <button class="action-btn" id="btn-advance" style="width: auto; padding: 10px 15px; background-color: #222; color: #fff;" onclick="advanceSeasonDate()">Advance Week</button>
+                    <button class="action-btn" id="btn-advance" style="display:block; width: auto; padding: 10px 15px; background-color: #222; color: #fff;" onclick="advanceSeasonDate()">Advance Week</button>
                 </div>
             </div>
 
@@ -391,12 +391,11 @@
             teamName: "", teamAbbr: "", logo: "🛡️", roster: [], league: [], schedule: [], matchday: 0,
             date: new Date(2026, 2, 6), // Starts Friday, March 6, 2026
             finances: 10000, form: "f-212",
-            attStyle: "buildup", defMarking: "zonal" // Player style parameters
+            attStyle: "buildup", defMarking: "zonal" 
         };
         let tacticalLineup = { "gk": null, "pos1": null, "pos2": null, "pos3": null, "pos4": null, "pos5": null };
         let activeDraggedPlayerId = null; 
         
-        // Realistic Hanspaulka Dates (Fridays)
         const seasonDates = ["3. 4. 2026", "10. 4. 2026", "17. 4. 2026", "24. 4. 2026", "1. 5. 2026", "8. 5. 2026", "15. 5. 2026", "22. 5. 2026", "29. 5. 2026", "5. 6. 2026", "12. 6. 2026"];
         const pitchesPool = ["Pražačka", "Děkanka", "Mikulovka", "Hanspaulka", "Štěpničná", "Motorlet", "Záběhlice", "Koráb", "Běchovice", "Hamr"];
 
@@ -406,7 +405,6 @@
             "f-311": { pos1: {t:20, l:32}, pos2: {t:50, l:32}, pos3: {t:80, l:32}, pos4: {t:50, l:55}, pos5: {t:50, l:82} }
         };
 
-        // --- RANDOM EVENTS DATA ---
         const weeklyEvents = [
             {
                 title: "Jižní Spojka Gridlock",
@@ -472,7 +470,6 @@
         document.getElementById('btn-to-kits').addEventListener('click', () => { switchScreen(screens.creation, screens.kits); });
         document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('player-modal').classList.add('hidden'));
 
-        // Handle structural strategy updates
         document.getElementById('attack-style-select').addEventListener('change', (e) => { gameState.attStyle = e.target.value; });
         document.getElementById('defense-marking-select').addEventListener('change', (e) => { gameState.defMarking = e.target.value; });
 
@@ -503,7 +500,6 @@
             return roster.sort((a, b) => { const o = { "GK": 1, "DEF": 2, "MID": 3, "ATT": 4 }; return o[a.position] - o[b.position]; });
         }
 
-        // --- ROUND ROBIN GENERATOR ---
         function generateRoundRobin(teamsArray) {
             let t = [...teamsArray]; let schedule = [];
             for (let round = 0; round < 11; round++) {
@@ -528,7 +524,6 @@
             
             gameState.roster = generateRoster(gameState.teamName); 
             
-            // Randomize choices for AI strategies too so it feels like a real league
             const aiTeamNames = ["Dynamo Žízeň", "FC Promile", "Sokol Žižkov", "Torpédo Smíchov", "Real Praha", "Spartak Braník", "Atletico Dejvice", "Boca Juniors", "FK Oaza", "Kozel FC", "Lokomotiva"];
             const attStyles = ["buildup", "longball", "wings"];
             const defMarkings = ["zonal", "man"];
@@ -556,14 +551,12 @@
         }
         document.getElementById('btn-finish-creation').addEventListener('click', initializeCareer);
 
-        // --- HIGH SCORING LOGIC FOR HANSPAULKA ---
         function getSimGoals() {
             let goals = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 5);
             if (Math.random() > 0.9) goals += Math.floor(Math.random() * 4) + 1; 
             return goals;
         }
 
-        // --- SIDEBAR TABLES AND RENDERS ---
         function renderDashboardTable() {
             let t = [...gameState.league].sort((a,b) => b.pts - a.pts || b.gd - a.gd);
             document.getElementById('ltb').innerHTML = '';
@@ -603,6 +596,15 @@
             });
             if(gameState.matchday >= 11) html += `<h2 style="text-align:center; color:#2e7d32; margin-top:20px;">Season Complete!</h2>`;
             document.getElementById('schedule-render-area').innerHTML = html;
+        }
+
+        // --- FIXED SEAMLESS CALENDAR CONFIGURATION ENGINE ---
+        function isCurrentDateMatchday() {
+            if(gameState.matchday >= 11) return false;
+            let s = gameState.schedule[gameState.matchday];
+            let dStr = s.date.split('. ');
+            let matchDate = new Date(2026, parseInt(dStr[1])-1, parseInt(dStr[0]));
+            return gameState.date.getTime() >= matchDate.getTime();
         }
 
         window.advanceSeasonDate = function() {
@@ -653,9 +655,17 @@
             document.getElementById('dash-date-text').innerText = `Date: ${gameState.date.getDate()}. ${gameState.date.getMonth()+1}. ${gameState.date.getFullYear()}`;
 
             let isMatchday = isCurrentDateMatchday();
-            document.getElementById('match-actions').style.display = isMatchday ? 'flex' : 'none';
-            document.getElementById('btn-advance').style.display = isMatchday ? 'none' : 'block';
-            document.getElementById('dash-status-msg').innerText = isMatchday ? "Matchday!" : "Off-season / Training week";
+            
+            // FIX: Explicitly toggle layouts style display metrics rather than nested classes
+            if (isMatchday) {
+                document.getElementById('match-actions').style.display = 'flex';
+                document.getElementById('btn-advance').style.display = 'none';
+                document.getElementById('dash-status-msg').innerText = "Matchday!";
+            } else {
+                document.getElementById('match-actions').style.display = 'none';
+                document.getElementById('btn-advance').style.display = 'block';
+                document.getElementById('dash-status-msg').innerText = "Off-season / Training week";
+            }
 
             if(gameState.matchday >= 11) {
                 document.getElementById('match-actions').style.display = 'none';
@@ -719,17 +729,16 @@
 
 
         // ==========================================
-        // PART 2: FULL ROUND SIMULATION & STRATEGY MATRICES
+        // PART 2: FULL ROUND SIMULATION & REFEREEING
         // ==========================================
         
-        // Strategy weight matrices to compute tactical advantage counters
         function calculateTacticalModifier(attStyle, defMarking) {
             let mod = 1.0;
-            if (attStyle === "buildup" && defMarking === "zonal") mod = 1.25; // Slow passes pull apart standard spatial blocks
-            if (attStyle === "buildup" && defMarking === "man") mod = 0.80;   // Tight markers suffocate slow build-ups
-            if (attStyle === "longball" && defMarking === "man") mod = 1.35;  // Launches fly directly over aggressive tight tracking units
-            if (attStyle === "longball" && defMarking === "zonal") mod = 0.75; // Positioned zone shields absorb long balls easily
-            if (attStyle === "wings" && defMarking === "zonal") mod = 1.20;    // Overloads the outer flanks of structural zone frameworks
+            if (attStyle === "buildup" && defMarking === "zonal") mod = 1.25; 
+            if (attStyle === "buildup" && defMarking === "man") mod = 0.80;   
+            if (attStyle === "longball" && defMarking === "man") mod = 1.35;  
+            if (attStyle === "longball" && defMarking === "zonal") mod = 0.75; 
+            if (attStyle === "wings" && defMarking === "zonal") mod = 1.20;    
             if (attStyle === "wings" && defMarking === "man") mod = 0.95;
             return mod;
         }
@@ -761,7 +770,6 @@
                         }
                     }
                 } else {
-                    // AI vs AI simulation calculations using their structural strategy parameters
                     let homeMod = calculateTacticalModifier(m.home.attStyle, m.away.defMarking);
                     let awayMod = calculateTacticalModifier(m.away.attStyle, m.home.defMarking);
                     
@@ -801,7 +809,6 @@
             alert(`Matchday Simulated!\n\n${pMatch.home.name} ${hG} - ${aG} ${pMatch.away.name}`);
         });
 
-        // --- REFEREE POPUP ---
         function showRefereeMenu(onConfirm) {
             const overlay = document.createElement('div');
             overlay.className = 'modal-overlay';
@@ -831,7 +838,6 @@
             };
         }
 
-        // --- LIVE ENGINE ---
         let tmInterval = null; let tmMinute = 0; let tmScore = { home: 0, away: 0 }; let currentLiveTactic = 'f-212';
         let liveMatchData = null; let isPlayerHome = false;
         let currentScorerId = null; let currentAssisterId = null;
@@ -879,7 +885,6 @@
                 b.classList.remove('hidden'); return; 
             }
 
-            // Tactical adjustments incorporated directly inside the tick frequency checks
             let oppTeam = isPlayerHome ? liveMatchData.away : liveMatchData.home;
             let homeAttStyle = isPlayerHome ? gameState.attStyle : oppTeam.attStyle;
             let awayAttStyle = !isPlayerHome ? gameState.attStyle : oppTeam.attStyle;
@@ -922,13 +927,14 @@
             } else if(Math.random() < 0.25) addCom("Intense scrap for the ball in midfield...");
         }
 
-        // --- ADVANCED 2D AGENT MATCH ENGINE (TACTICS DRIVEN) ---
+        // --- ADVANCED 2D AGENT MATCH ENGINE ---
         let fmAnimId;
         
         function trigger2DHighlight(scoringSide, scorerName, successCallback) {
             clearInterval(tmInterval); 
             document.getElementById('highlight-overlay').classList.remove('hidden');
             document.getElementById('goal-flash-text').style.opacity = '0';
+            document.getElementById('highlight-desc-text').innerText = `${scorerName} is finding space...`;
             
             let cv = document.getElementById('highlight-canvas');
             let ctx = cv.getContext('2d');
@@ -941,7 +947,6 @@
             let isPlayerAttacking = (isHome && isPlayerHome) || (!isHome && !isPlayerHome);
             let oppTeam = isPlayerHome ? liveMatchData.away : liveMatchData.home;
 
-            // Resolve actual runtime tactical styles
             let attStyle = isPlayerAttacking ? gameState.attStyle : oppTeam.attStyle;
             let defMarking = !isPlayerAttacking ? gameState.defMarking : oppTeam.defMarking;
 
@@ -961,7 +966,6 @@
                 let startX = (isHome ? l.l - 15 : 100 - l.l + 15) / 100 * pitch.w; 
                 let targetX = (isHome ? l.l : 100 - l.l) / 100 * pitch.w;
                 
-                // If attacking style is down the wings, push flank targets outwards
                 let targetY = (l.t / 100) * pitch.h;
                 if(attStyle === "wings") {
                     if (pos === "pos1" || pos === "pos4") targetY = 35;
@@ -980,7 +984,6 @@
             let scorerObj = agents.find(a => a.id === 'a_pos4') || agents.find(a => a.isAtt && a.role !== 'gk');
             let assisterObj = agents.find(a => a.id === 'a_pos3') || agents.find(a => a.isAtt && a.role !== 'gk' && a.id !== scorerObj.id);
 
-            // Handle start positions according to tactical scripts
             if(attStyle === "longball") {
                 assisterObj = agents.find(a => a.id === 'a_pos1' || a.id === 'a_pos2') || assisterObj;
             }
@@ -992,7 +995,6 @@
             function renderEngine() {
                 ctx.clearRect(0,0,pitch.w,pitch.h);
                 
-                // Sector Line Guides on Canvas Background
                 ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
                 ctx.beginPath(); ctx.moveTo(200, 0); ctx.lineTo(200, pitch.h); ctx.moveTo(400, 0); ctx.lineTo(400, pitch.h); ctx.stroke(); ctx.setLineDash([]);
 
@@ -1001,11 +1003,9 @@
                 ctx.strokeRect(0, 75, 100, 200); ctx.strokeRect(500, 75, 100, 200);
                 ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fillRect(0, 125, 20, 100); ctx.fillRect(580, 125, 20, 100);
 
-                // Defending targets updated dynamically under Man Marking logic rules
                 if (defMarking === "man") {
                     agents.forEach(d => {
                         if (!d.isAtt && d.role !== 'gk') {
-                            // Find corresponding attacker slot to stalk tightly
                             let pairedAttacker = agents.find(a => a.isAtt && a.role === d.role);
                             if(pairedAttacker) {
                                 d.tx = pairedAttacker.x - dir * 18;
