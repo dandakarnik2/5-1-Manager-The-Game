@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanspaulka Manager</title>
+    <style>
+        /* --- GLOBAL STYLES --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ffffff; color: #333333; overflow: hidden; position: relative; height: 100vh; width: 100vw; }
+
+        .screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; width: 100vw; position: absolute; top: 0; left: 0; transition: opacity 0.3s ease, z-index 0.3s ease; }
+        .hidden { opacity: 0 !important; pointer-events: none !important; z-index: -100 !important; }
+        .active { opacity: 1 !important; pointer-events: auto !important; z-index: 10 !important; }
+
+        .main-title { font-size: 4rem; letter-spacing: 2px; text-transform: uppercase; color: #222222; margin-bottom: 40px; text-align: center; }
+        h2 { font-size: 2rem; color: #222222; margin-bottom: 20px; text-transform: uppercase; text-align: center; }
+        h3 { font-size: 1.1rem; text-transform: uppercase; border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; color: #222; letter-spacing: 0.5px; }
+
+        .exit-btn { position: absolute; top: 30px; left: 30px; background: none; border: none; font-size: 2.5rem; color: #333333; cursor: pointer; transition: all 0.2s ease; display: flex; justify-content: center; align-items: center; width: 50px; height: 50px; border-radius: 50%; z-index: 50; }
+        .exit-btn:hover { color: #ffcc00; transform: translateX(-5px); background-color: rgba(0,0,0,0.05); }
+
+        .creation-card { background-color: #f9f9f9; padding: 25px 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); width: 100%; display: flex; flex-direction: column; gap: 15px; }
+        .team-card { max-width: 420px; }
+        .kit-card { max-width: 600px; }
+        .dashboard-card, .tactics-card { max-width: 1400px; width: 96%; height: 94vh; max-height: 94vh; }
+
+        .input-group { display: flex; flex-direction: column; gap: 6px; width: 100%; align-items: stretch; text-align: left; }
+        .input-group label { font-weight: bold; font-size: 0.85rem; color: #555; text-transform: uppercase; display: block; }
+        input[type="text"], select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; transition: border-color 0.3s; background-color: #fff; cursor: pointer; display: block; }
+        input[type="text"]:focus, select:focus { border-color: #ffcc00; }
+
+        .btn-group { display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px; width: 100%; }
+        .menu-btn, .action-btn { background-color: #ffcc00; color: #222222; border: none; padding: 12px 25px; font-size: 1.1rem; font-weight: 800; border-radius: 40px; cursor: pointer; transition: all 0.3s ease; width: 100%; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); }
+        .menu-btn { padding: 15px 30px; width: 240px; }
+        .menu-btn:hover, .action-btn:hover { background-color: #888888; color: #ffffff; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2); }
+        .btn-secondary { background-color: #e0e0e0; color: #333; box-shadow: none; }
+        .btn-secondary:hover { background-color: #cccccc; color: #111; }
+        
+        .side-ctrl-btn { width: 100%; padding: 10px 12px; text-align: left; background: #fff; border: 1px solid #ddd; border-radius: 8px; font-weight: bold; font-size: 0.85rem; text-transform: uppercase; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: space-between; }
+        .side-ctrl-btn:hover { border-color: #ffcc00; background: #fffbdd; }
+
+        .logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 5px; width: 100%; }
+        .logo-option { background-color: #fff; border: 2px solid #ddd; border-radius: 8px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 1.6rem; cursor: pointer; transition: all 0.2s; }
+        .logo-option.selected { border-color: #ffcc00 !important; background-color: #fffbdd !important; box-shadow: 0 0 10px rgba(255, 204, 0, 0.3); }
+
+        .color-row { display: flex; gap: 15px; width: 100%; }
+        .color-row > div { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        input[type="color"] { width: 100%; height: 45px; border: none; border-radius: 8px; cursor: pointer; padding: 0; background: none; }
+        .kit-layout { display: flex; gap: 30px; width: 100%; }
+        .kit-section { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+
+        .dash-header { display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px; width: 100%; }
+        .dash-logo { font-size: 3.5rem; }
+        .dash-title { display: flex; flex-direction: column; }
+        .dash-title h2 { margin: 0; font-size: 1.8rem; text-align: left; }
+        .dash-title span { color: #888; font-weight: bold; }
+
+        /* --- RESTRUCTURED DUAL PANELS --- */
+        .dash-content { display: flex; gap: 20px; height: calc(100% - 90px); width: 100%; overflow: hidden; }
+        .dash-sidebar-left { width: 360px; flex: none; display: flex; flex-direction: column; gap: 10px; height: 100%; border-right: 1px solid #eee; padding-right: 12px; }
+        .dash-main-grid { flex: 1; display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; height: 100%; overflow: hidden; }
+        
+        .roster-list { display: flex; flex-direction: column; gap: 6px; height: 100%; overflow-y: auto; padding-right: 5px; width: 100%; }
+        .player-row { display: flex; align-items: center; background: #fff; padding: 10px 15px; border-radius: 8px; border: 1px solid #eee; cursor: pointer; transition: all 0.2s; user-select: none; width: 100%; }
+        .player-row:hover { background: #f0f0f0; border-color: #ffcc00; }
+        .player-row.fielded-assigned { opacity: 0.3; pointer-events: none; border-style: dashed; }
+        
+        .player-pos { font-weight: 800; width: 42px; text-align: center; padding: 4px; border-radius: 4px; font-size: 0.75rem; }
+        .pos-GK { background: #ffeaa7; color: #d68910; } .pos-DEF { background: #a29bfe; color: #6c5ce7; } .pos-MID { background: #55efc4; color: #00b894; } .pos-ATT { background: #fab1a0; color: #e17055; }
+        .player-name { flex-grow: 1; margin-left: 12px; font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .player-ovr-badge { font-weight: bold; background-color: #eee; padding: 4px 8px; border-radius: 6px; font-size: 0.85rem; }
+
+        .table-container { height: 100%; overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid #eee; width: 100%; }
+        .league-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 0.85rem; }
+        .league-table th { background-color: #f5f5f5; padding: 12px 6px; position: sticky; top: 0; font-weight: bold; border-bottom: 2px solid #ddd; z-index: 5; }
+        .league-table td { padding: 10px 6px; border-bottom: 1px solid #eee; }
+        .league-table .text-left-col { text-align: left; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .player-team-row { background-color: #fffbdd !important; font-weight: bold; border-left: 4px solid #ffcc00; }
+
+        /* --- SCHEDULE LIST STYLES --- */
+        .sched-round-header { background: #333; color: #fff; padding: 8px 12px; font-weight: bold; position: sticky; top: 0; border-radius: 4px; margin-bottom: 5px; display: flex; justify-content: space-between; font-size: 0.85rem;}
+        .sched-match { display: flex; justify-content: space-between; padding: 9px 10px; border-bottom: 1px solid #eee; background: #fff; align-items: center; font-size: 0.85rem; }
+        .sched-match.player-match { background: #fffbdd; border-left: 4px solid #ffcc00; }
+        .sched-score { font-weight: 900; background: #eee; padding: 3px 8px; border-radius: 4px; min-width: 45px; text-align: center; }
+
+        /* --- VISUAL PITCH SECTORS CONFIG --- */
+        .pitch-container { flex: 1; height: 100%; background-color: #2e7d32; border-radius: 12px; border: 4px solid #ffffff; position: relative; overflow: hidden; display: flex; }
+        .pitch-sector-overlay { position: absolute; top: 0; height: 100%; width: 33.33%; display: flex; align-items: flex-start; justify-content: center; padding-top: 10px; color: rgba(255,255,255,0.25); font-weight: 900; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; pointer-events: none; }
+        .sector-def { left: 0; border-right: 2px dashed rgba(255,255,255,0.2); background: rgba(0,0,0,0.03); }
+        .sector-mid { left: 33.33%; border-right: 2px dashed rgba(255,255,255,0.2); }
+        .sector-att { left: 66.66%; background: rgba(0,0,0,0.03); }
+        
+        .pitch-center-circle { position: absolute; top: 50%; left: 50%; width: 120px; height: 120px; border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none;}
+        .pitch-slot { position: absolute; width: 100px; height: 100px; background-color: rgba(0, 0, 0, 0.45); border: 2px dashed rgba(255,255,255,0.4); border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 10px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: bold; transform: translate(-50%, -50%); transition: 0.2s; z-index: 10; }
+        .pitch-slot.outfield { cursor: move; }
+        .pitch-slot.occupied { background-color: #ffffff; border: 2px solid #ffcc00; color: #222222; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .slot-role-title { font-size: 0.65rem; color: #ffcc00; margin-bottom: 2px; pointer-events: none;}
+        .occupied .slot-role-title { color: #888; }
+        .slot-player-name { font-size: 0.8rem; font-weight: bold; margin-top: 2px; pointer-events: none;}
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .modal-card { background: white; border-radius: 15px; padding: 25px; width: 100%; max-width: 350px; position: relative; text-align: center; }
+        .close-modal-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #888; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: 15px; }
+        .stat-box { background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 2px; }
+
+        /* --- TEXT MATCH UI STYLES --- */
+        .text-match-container { display: flex; flex-direction: column; width: 95%; max-width: 1200px; height: 90vh; background: #1a1e24; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); padding: 25px; color: #f0f0f0; position: relative; overflow: hidden; }
+        .tm-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; }
+        .tm-score-block { text-align: center; flex: 1; }
+        .tm-score-text { font-size: 2.8rem; font-weight: 900; letter-spacing: 2px; }
+        .tm-time-text { font-size: 1.8rem; color: #ffcc00; font-family: monospace; font-weight: bold; margin-top: 5px; }
+        .tm-body { display: flex; gap: 25px; flex: 1; overflow: hidden; }
+        .tm-center { flex: 1.8; display: flex; flex-direction: column; gap: 15px; }
+        .tm-right { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .tm-panel { background: #0f1216; border: 1px solid #2a2f38; border-radius: 8px; padding: 15px; overflow-y: auto; }
+        .tm-panel h4 { border-bottom: 1px solid #333; padding-bottom: 8px; margin-bottom: 10px; color: #888; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+        .tm-events { flex: 1; font-size: 0.95rem; }
+        .tm-commentary { flex: 1.5; font-family: monospace; font-size: 1.1rem; line-height: 1.6; color: #ccc; }
+        
+        .tm-tactics-bar { background: #222; padding: 12px 15px; border-radius: 8px; display: flex; align-items: center; gap: 10px; border: 1px solid #333; }
+        .tm-tactic-btn { background: #333; color: white; border: 1px solid #555; padding: 6px 12px; border-radius: 4px; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .tm-tactic-btn.active-tactic { background: #ffcc00; color: #111; border-color: #ffcc00; }
+        .event-log-item { margin-bottom: 8px; padding-left: 10px; border-left: 3px solid #ffcc00; }
+        .event-log-goal { border-left-color: #4CAF50; color: #4CAF50; font-weight: bold; }
+
+        /* --- 2D HIGHLIGHT OVERLAY STYLES --- */
+        #highlight-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 200; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #highlight-canvas { background-color: #2e7d32; border: 4px solid #fff; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+        .highlight-title { color: #ffcc00; font-size: 2rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+        .highlight-desc { color: #fff; font-size: 1.2rem; margin-top: 15px; font-family: monospace; }
+        .goal-flash { position: absolute; top: 40%; font-size: 6rem; font-weight: 900; color: #ffcc00; text-shadow: 0 0 20px #ff0000; z-index: 210; opacity: 0; transition: opacity 0.2s; pointer-events: none;}
+    </style>
+</head>
+<body>
+
+    <div id="main-menu" class="screen active">
+        <div class="main-title">Hanspaulka Manager</div>
+        <div class="btn-group">
+            <button class="menu-btn" id="btn-new-game">New Game</button>
+            <button class="menu-btn" id="btn-load-game">Load Game</button>
+            <button class="menu-btn" id="btn-quit">Quit</button>
+        </div>
+    </div>
+
+    <div id="creation-screen" class="screen hidden">
+        <button class="exit-btn" id="btn-exit-creation">&#8592;</button>
+        <div class="creation-card team-card">
+            <h2>Club Information</h2>
+            <div class="input-group">
+                <label>Team Name</label>
+                <input type="text" id="team-name" placeholder="e.g. FC Hanspaulka" maxlength="20" value="FC Hanspaulka">
+            </div>
+            <div class="input-group">
+                <label>Scoreboard Abbreviation</label>
+                <input type="text" id="team-abbr" placeholder="HAN" maxlength="3" style="text-transform: uppercase;" value="HAN">
+            </div>
+            <div class="input-group">
+                <label>Club Badge</label>
+                <div class="logo-grid" id="logo-grid">
+                    <div class="logo-option selected" data-logo="🛡️">🛡️</div>
+                    <div class="logo-option" data-logo="🦅">🦅</div>
+                    <div class="logo-option" data-logo="🦁">🦁</div>
+                    <div class="logo-option" data-logo="⚽">⚽</div>
+                    <div class="logo-option" data-logo="⚔️">⚔️</div>
+                    <div class="logo-option" data-logo="🐻">🐻</div>
+                </div>
+            </div>
+            <div class="btn-group"><button class="action-btn" id="btn-to-kits">Next: Kits &#8594;</button></div>
+        </div>
+    </div>
+
+    <div id="kit-screen" class="screen hidden">
+        <button class="exit-btn" id="btn-back-to-team">&#8592;</button>
+        <div class="creation-card kit-card">
+            <h2>Design Your Kits</h2>
+            <div class="kit-layout">
+                <div class="kit-section">
+                    <h3>Home Kit</h3>
+                    <div class="color-row"><div><label>Primary</label><input type="color" id="home-color-1" value="#ffcc00"></div></div>
+                </div>
+                <div class="kit-section">
+                    <h3>Away Kit</h3>
+                    <div class="color-row"><div><label>Primary</label><input type="color" id="away-color-1" value="#ffffff"></div></div>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: 20px;"><button class="action-btn" id="btn-finish-creation">Start Career</button></div>
+        </div>
+    </div>
+
+    <div id="dashboard-screen" class="screen hidden">
+        <button class="exit-btn" id="btn-exit-to-menu">&#8592;</button>
+        <div class="creation-card dashboard-card">
+            
+            <div class="dash-header">
+                <div class="dash-logo" id="dash-logo">🛡️</div>
+                <div class="dash-title">
+                    <h2 id="dash-team-name">Team Name</h2>
+                    <span>8. LIGA (Group C) - <span id="dash-date-text" style="color:#ffcc00;">Date: 6. 3. 2026</span></span>
+                </div>
+                <div style="margin-left: auto; display: flex; gap: 10px; align-items: center;">
+                    <div id="dash-status-msg" style="color:#666; font-weight:bold; margin-right: 15px;"></div>
+                    
+                    <div id="match-actions" style="display:flex; gap:10px;">
+                        <button class="action-btn btn-sim" id="btn-quick-sim" style="width: auto; padding: 10px 15px;">Quick Sim Round</button>
+                        <button class="action-btn" id="btn-play-text-match" style="width: auto; padding: 10px 15px; background-color: #ff9800; color: white;">Play Live Match</button>
+                    </div>
+                    <button class="action-btn" id="btn-advance" style="width: auto; padding: 10px 15px; background-color: #222; color: #fff;" onclick="advanceSeasonDate()">Advance Week</button>
+                </div>
+            </div>
+
+            <div class="dash-content">
+                <div class="dash-sidebar-left">
+                    <div style="padding:10px; background:#f0f2f5; border-radius:8px; text-align:center; border: 1px solid #e0e0e0;">
+                        <span style="font-size:0.75rem; text-transform:uppercase; font-weight:800; color:#666; letter-spacing:0.5px;">Club Balance</span><br>
+                        <strong style="color:#2e7d32; font-size:1.2rem;" id="ui-finances">10,000 CZK</strong>
+                    </div>
+
+                    <button class="action-btn side-ctrl-btn" id="btn-to-tactics">📋 Manage Tactics <span>&#8594;</span></button>
+                    <button class="side-ctrl-btn" id="btn-save-game">💾 Save Progress</button>
+                    <button class="side-ctrl-btn" id="btn-settings" onclick="alert('Settings optimized.')">⚙️ Settings</button>
+
+                    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; margin-top:5px;">
+                        <h3>Squad Matrix Stats (<span id="dash-squad-size">0</span>)</h3>
+                        <div class="table-container">
+                            <table class="league-table" style="text-align:left;">
+                                <thead>
+                                    <tr>
+                                        <th style="padding-left:8px; width:45px;">Pos</th>
+                                        <th>Name</th>
+                                        <th style="text-align:center; color:#d32f2f; width:35px;">G</th>
+                                        <th style="text-align:center; color:#1976d2; width:35px;">A</th>
+                                        <th style="text-align:center; width:40px;">OVR</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sidebar-matrix-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dash-main-grid">
+                    <div style="display:flex; flex-direction:column; overflow:hidden;">
+                        <h3>Season Schedule</h3>
+                        <div class="table-container" style="background: #f9f9f9; padding: 10px;">
+                            <div id="schedule-render-area"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; overflow:hidden;">
+                        <h3>League Standings Table</h3>
+                        <div class="table-container">
+                            <table class="league-table" id="dashboard-main-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:40px;">#</th>
+                                        <th class="text-left-col">Club</th>
+                                        <th>P</th>
+                                        <th>W</th>
+                                        <th>D</th>
+                                        <th>L</th>
+                                        <th>GD</th>
+                                        <th>Pts</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ltb"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tactics-screen" class="screen hidden">
+        <button class="exit-btn" id="btn-tactics-back">&#8592;</button>
+        <div class="creation-card tactics-card">
+            <div class="dash-header">
+                <div class="dash-logo" id="tactics-logo-disp">🛡️</div>
+                <div class="dash-title"><h2 id="tactics-team-disp">Team Name</h2><span>Matchday Strategy Board</span></div>
+                <div style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
+                    <div class="input-group" style="flex-direction: row; align-items: center; gap: 6px;">
+                        <label style="margin: 0; white-space: nowrap;">Template:</label>
+                        <select id="formation-select" style="padding: 6px 12px; font-size: 0.85rem; width:110px;">
+                            <option value="f-212" selected>2-1-2 (Bal)</option>
+                            <option value="f-131">1-3-1 (Att)</option>
+                            <option value="f-311">3-1-1 (Def)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="flex-direction: row; align-items: center; gap: 6px;">
+                        <label style="margin: 0; white-space: nowrap;">Attack:</label>
+                        <select id="attack-style-select" style="padding: 6px 12px; font-size: 0.85rem; width:130px;">
+                            <option value="buildup" selected>Slow Build-up</option>
+                            <option value="longball">Long Balls</option>
+                            <option value="wings">Down Wings</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="flex-direction: row; align-items: center; gap: 6px;">
+                        <label style="margin: 0; white-space: nowrap;">Defence:</label>
+                        <select id="defense-marking-select" style="padding: 6px 12px; font-size: 0.85rem; width:130px;">
+                            <option value="zonal" selected>Zonal Marking</option>
+                            <option value="man">Man Marking</option>
+                        </select>
+                    </div>
+                    <button class="action-btn" id="btn-reset-tactics" style="width: auto; padding: 8px 15px; background-color: #d32f2f; color: white;">Clear</button>
+                </div>
+            </div>
+            <div class="dash-content">
+                <div class="dash-column column-fixed-left" style="width:300px;">
+                    <h3>Available Players</h3>
+                    <div class="roster-list" id="roster-list-tactics"></div>
+                </div>
+                <div class="dash-column" style="flex:1;">
+                    <div class="pitch-container" id="football-pitch">
+                        <div class="pitch-sector-overlay sector-def">Defence</div>
+                        <div class="pitch-sector-overlay sector-mid">Midfield</div>
+                        <div class="pitch-sector-overlay sector-att">Attack</div>
+
+                        <div class="pitch-center-circle"></div>
+                        <div class="pitch-slot slot-gk" data-position="gk" style="top:50%; left:10%;"><span class="slot-role-title">GK</span></div>
+                        <div class="pitch-slot outfield" data-position="pos1" style="top:25%; left:32%;"></div>
+                        <div class="pitch-slot outfield" data-position="pos2" style="top:75%; left:32%;"></div>
+                        <div class="pitch-slot outfield" data-position="pos3" style="top:50%; left:55%;"></div>
+                        <div class="pitch-slot outfield" data-position="pos4" style="top:25%; left:82%;"></div>
+                        <div class="pitch-slot outfield" data-position="pos5" style="top:75%; left:82%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="match-live-screen" class="screen hidden" style="background-color: #0b0d10; z-index: 100;">
+        <div class="text-match-container">
+            
+            <div id="highlight-overlay" class="hidden">
+                <div class="highlight-title">Goal Highlight</div>
+                <canvas id="highlight-canvas" width="600" height="350"></canvas>
+                <div class="highlight-desc" id="highlight-desc-text">Player is finding space...</div>
+                <div class="goal-flash" id="goal-flash-text">GOAL!!!</div>
+            </div>
+
+            <div class="tm-header">
+                <div style="flex: 1; text-align: left;"><h2 id="tm-home-name" style="margin:0; color:#ffcc00;">HOME</h2></div>
+                <div class="tm-score-block">
+                    <div class="tm-score-text"><span id="tm-score-home">0</span> - <span id="tm-score-away">0</span></div>
+                    <div class="tm-time-text" id="tm-clock">00:00</div>
+                </div>
+                <div style="flex: 1; text-align: right;"><h2 id="tm-away-name" style="margin:0; color:#fff;">AWAY</h2></div>
+            </div>
+
+            <div class="tm-body">
+                <div class="tm-center">
+                    <div class="tm-panel tm-events" id="tm-events-box"><h4>Match Events</h4></div>
+                    <div class="tm-panel tm-commentary" id="tm-commentary-box"><h4>Live Commentary</h4><div style="color: #666;">Waiting for kick-off...</div></div>
+                    <div class="tm-tactics-bar">
+                        <span style="font-size: 0.9rem; font-weight: bold; color: #888;">Live Tactics:</span>
+                        <button class="tm-tactic-btn active-tactic" id="btn-tac-f-212" onclick="changeLiveTactic('f-212')">2-1-2</button>
+                        <button class="tm-tactic-btn" id="btn-tac-f-131" onclick="changeLiveTactic('f-131')">1-3-1</button>
+                        <button class="tm-tactic-btn" id="btn-tac-f-311" onclick="changeLiveTactic('f-311')">3-1-1</button>
+                        <button id="btn-tm-control" class="action-btn" style="margin-left: auto; background-color: #4CAF50; color: white;">Start Match</button>
+                    </div>
+                </div>
+                <div class="tm-right">
+                    <div class="tm-panel" style="flex: 1;"><h4 style="color: #ffcc00;">Your Squad</h4><div id="tm-home-squad"></div></div>
+                    <div class="tm-panel" style="flex: 1;"><h4 style="color: #ddd;">Opponent Squad</h4><div id="tm-away-squad"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="player-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <button class="close-modal-btn" id="btn-close-modal">&times;</button>
+            <div class="modal-player-header"><h4 id="modal-p-name">Jan Novák</h4><span id="modal-p-pos" class="modal-pos-tag pos-MID">MID</span></div>
+            <div class="modal-ovr-big" id="modal-p-ovr">55</div>
+            <div class="stats-grid">
+                <div class="stat-box"><span>Attacking</span><strong id="modal-s-att">52</strong></div>
+                <div class="stat-box"><span>Defending</span><strong id="modal-s-def">48</strong></div>
+                <div class="stat-box"><span>Physical</span><strong id="modal-s-phy">58</strong></div>
+                <div class="stat-box"><span>Mentality</span><strong id="modal-s-men">54</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // PART 1: GAME DATA & STATE MANAGER
+        // ==========================================
+        let gameState = { 
+            teamName: "", teamAbbr: "", logo: "🛡️", roster: [], league: [], schedule: [], matchday: 0,
+            date: new Date(2026, 2, 6), // Starts Friday, March 6, 2026
+            finances: 10000, form: "f-212",
+            attStyle: "buildup", defMarking: "zonal" // Player style parameters
+        };
+        let tacticalLineup = { "gk": null, "pos1": null, "pos2": null, "pos3": null, "pos4": null, "pos5": null };
+        let activeDraggedPlayerId = null; 
+        
+        // Realistic Hanspaulka Dates (Fridays)
+        const seasonDates = ["3. 4. 2026", "10. 4. 2026", "17. 4. 2026", "24. 4. 2026", "1. 5. 2026", "8. 5. 2026", "15. 5. 2026", "22. 5. 2026", "29. 5. 2026", "5. 6. 2026", "12. 6. 2026"];
+        const pitchesPool = ["Pražačka", "Děkanka", "Mikulovka", "Hanspaulka", "Štěpničná", "Motorlet", "Záběhlice", "Koráb", "Běchovice", "Hamr"];
+
+        const layouts = {
+            "f-212": { pos1: {t:25, l:32}, pos2: {t:75, l:32}, pos3: {t:50, l:55}, pos4: {t:25, l:82}, pos5: {t:75, l:82} },
+            "f-131": { pos1: {t:50, l:32}, pos2: {t:20, l:55}, pos3: {t:50, l:55}, pos4: {t:80, l:55}, pos5: {t:50, l:82} },
+            "f-311": { pos1: {t:20, l:32}, pos2: {t:50, l:32}, pos3: {t:80, l:32}, pos4: {t:50, l:55}, pos5: {t:50, l:82} }
+        };
+
+        // --- RANDOM EVENTS DATA ---
+        const weeklyEvents = [
+            {
+                title: "Jižní Spojka Gridlock",
+                desc: "is completely stuck in a brutal traffic jam on Jižní spojka. He sprinted out of his car, arrived late, and completely missed the team warm-up!",
+                effect: (p) => {
+                    p.stats.phy = Math.max(35, p.baseStats.phy - 15);
+                    p.stats.men = Math.max(35, p.baseStats.men - 5);
+                    p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+                }
+            },
+            {
+                title: "Žižkov Pub Blunder",
+                desc: "went down to a local pub in Žižkov for 'one quick beer' last night. He turned up to the match looking incredibly pale and massively hungover.",
+                effect: (p) => {
+                    p.stats.phy = Math.max(35, p.baseStats.phy - 22);
+                    p.stats.men = Math.max(35, p.baseStats.men - 15);
+                    p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+                }
+            },
+            {
+                title: "All-Night Gaming Marathon",
+                desc: "stayed up until 5:00 AM grinding ranked video games. He can barely keep his eyes open during the tactical pre-match briefing.",
+                effect: (p) => {
+                    p.stats.men = Math.max(35, p.baseStats.men - 18);
+                    p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+                }
+            },
+            {
+                title: "Pražačka Casual Slip-Up",
+                desc: "attempted a ridiculous flashy bicycle kick during a casual kickabout with friends at Pražačka and awkwardly twisted his ankle.",
+                effect: (p) => {
+                    p.stats.phy = Math.max(35, p.baseStats.phy - 15);
+                    p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+                }
+            },
+            {
+                title: "Unscheduled Office Overtime",
+                desc: "got pinned down by unexpected late-night corporate tasks at work. He had to run directly onto the pitch from the subway without any physical prep.",
+                effect: (p) => {
+                    p.stats.men = Math.max(35, p.baseStats.men - 10);
+                    p.stats.phy = Math.max(35, p.baseStats.phy - 5);
+                    p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+                }
+            }
+        ];
+
+        const screens = { menu: document.getElementById('main-menu'), creation: document.getElementById('creation-screen'), kits: document.getElementById('kit-screen'), dashboard: document.getElementById('dashboard-screen'), tactics: document.getElementById('tactics-screen'), match: document.getElementById('match-live-screen') };
+        function switchScreen(hide, show) { hide.classList.remove('active'); hide.classList.add('hidden'); show.classList.remove('hidden'); show.classList.add('active'); }
+
+        document.getElementById('btn-new-game').addEventListener('click', () => switchScreen(screens.menu, screens.creation));
+        document.getElementById('btn-exit-creation').addEventListener('click', () => switchScreen(screens.creation, screens.menu));
+        document.getElementById('btn-back-to-team').addEventListener('click', () => switchScreen(screens.kits, screens.creation));
+        document.getElementById('btn-exit-to-menu').addEventListener('click', () => switchScreen(screens.dashboard, screens.menu));
+        
+        document.getElementById('btn-to-tactics').addEventListener('click', () => { 
+            document.getElementById('tactics-team-disp').innerText = gameState.teamName; 
+            document.getElementById('attack-style-select').value = gameState.attStyle;
+            document.getElementById('defense-marking-select').value = gameState.defMarking;
+            renderTacticsRoster(); 
+            switchScreen(screens.dashboard, screens.tactics); 
+        });
+        document.getElementById('btn-tactics-back').addEventListener('click', () => { renderDashboard(); switchScreen(screens.tactics, screens.dashboard); });
+        document.getElementById('btn-to-kits').addEventListener('click', () => { switchScreen(screens.creation, screens.kits); });
+        document.getElementById('btn-close-modal').addEventListener('click', () => document.getElementById('player-modal').classList.add('hidden'));
+
+        // Handle structural strategy updates
+        document.getElementById('attack-style-select').addEventListener('change', (e) => { gameState.attStyle = e.target.value; });
+        document.getElementById('defense-marking-select').addEventListener('change', (e) => { gameState.defMarking = e.target.value; });
+
+        const logoOptions = document.querySelectorAll('.logo-option');
+        logoOptions.forEach(opt => opt.addEventListener('click', () => { logoOptions.forEach(o => o.classList.remove('selected')); opt.classList.add('selected'); gameState.logo = opt.getAttribute('data-logo'); }));
+
+        const czFirstNames = ["Jan", "Petr", "Jakub", "Tomáš", "Lukáš", "Michal", "Jiří", "Ondřej"]; const czLastNames = ["Novák", "Svoboda", "Novotný", "Dvořák", "Černý", "Procházka", "Kučera"];
+        function rollTierStat() { return Math.floor(Math.random() * 11) + 50; }
+        
+        function generateRoster(teamName) {
+            const roster = [];
+            for (let i = 0; i < 14; i++) {
+                const pos = i === 0 ? "GK" : ["DEF", "MID", "ATT"][Math.floor(Math.random() * 3)];
+                const att = rollTierStat(); const def = rollTierStat(); const phy = rollTierStat(); const men = rollTierStat();
+                let initialStats = { att, def, phy, men };
+                roster.push({ 
+                    id: Math.random().toString(36).substr(2,9), 
+                    name: `${czFirstNames[Math.floor(Math.random()*czFirstNames.length)]} ${czLastNames[Math.floor(Math.random()*czLastNames.length)]}`, 
+                    position: pos, 
+                    stats: { ...initialStats }, 
+                    baseStats: { ...initialStats }, 
+                    ovr: Math.round((att+def+phy+men)/4), 
+                    club: teamName, 
+                    goals: 0, 
+                    assists: 0 
+                });
+            }
+            return roster.sort((a, b) => { const o = { "GK": 1, "DEF": 2, "MID": 3, "ATT": 4 }; return o[a.position] - o[b.position]; });
+        }
+
+        // --- ROUND ROBIN GENERATOR ---
+        function generateRoundRobin(teamsArray) {
+            let t = [...teamsArray]; let schedule = [];
+            for (let round = 0; round < 11; round++) {
+                let matches = [];
+                for (let i = 0; i < 6; i++) {
+                    matches.push({
+                        home: t[i], away: t[11 - i],
+                        pitch: pitchesPool[Math.floor(Math.random() * pitchesPool.length)],
+                        res: null
+                    });
+                }
+                schedule.push({ roundNum: round+1, date: seasonDates[round], matches: matches });
+                t.splice(1, 0, t.pop()); 
+            }
+            return schedule;
+        }
+
+        function initializeCareer() {
+            gameState.teamName = document.getElementById('team-name').value.trim() || "FC Hanspaulka"; 
+            gameState.teamAbbr = document.getElementById('team-abbr').value.trim().toUpperCase() || "HAN"; 
+            if (!gameState.logo) gameState.logo = "🛡️";
+            
+            gameState.roster = generateRoster(gameState.teamName); 
+            
+            // Randomize choices for AI strategies too so it feels like a real league
+            const aiTeamNames = ["Dynamo Žízeň", "FC Promile", "Sokol Žižkov", "Torpédo Smíchov", "Real Praha", "Spartak Braník", "Atletico Dejvice", "Boca Juniors", "FK Oaza", "Kozel FC", "Lokomotiva"];
+            const attStyles = ["buildup", "longball", "wings"];
+            const defMarkings = ["zonal", "man"];
+
+            gameState.league = aiTeamNames.map(name => ({ 
+                name: name, abbr: name.substring(0,3).toUpperCase(), isPlayer: false, logo: "⚽", 
+                colors: { home: "#1976d2" }, formation: "f-212", roster: generateRoster(name), 
+                attStyle: attStyles[Math.floor(Math.random() * attStyles.length)],
+                defMarking: defMarkings[Math.floor(Math.random() * defMarkings.length)],
+                p: 0, w: 0, d: 0, l: 0, gd: 0, pts: 0 
+            }));
+            
+            let pTeam = { 
+                name: gameState.teamName, abbr: gameState.teamAbbr, isPlayer: true, logo: gameState.logo, 
+                colors: { home: document.getElementById('home-color-1').value }, formation: "f-212", roster: gameState.roster, 
+                attStyle: gameState.attStyle, defMarking: gameState.defMarking,
+                p: 0, w: 0, d: 0, l: 0, gd: 0, pts: 0 
+            };
+            gameState.league.push(pTeam);
+            
+            gameState.schedule = generateRoundRobin(gameState.league);
+            gameState.matchday = 0;
+
+            renderDashboard(); switchScreen(screens.kits, screens.dashboard);
+        }
+        document.getElementById('btn-finish-creation').addEventListener('click', initializeCareer);
+
+        // --- HIGH SCORING LOGIC FOR HANSPAULKA ---
+        function getSimGoals() {
+            let goals = Math.floor(Math.random() * 6) + Math.floor(Math.random() * 5);
+            if (Math.random() > 0.9) goals += Math.floor(Math.random() * 4) + 1; 
+            return goals;
+        }
+
+        // --- SIDEBAR TABLES AND RENDERS ---
+        function renderDashboardTable() {
+            let t = [...gameState.league].sort((a,b) => b.pts - a.pts || b.gd - a.gd);
+            document.getElementById('ltb').innerHTML = '';
+            t.forEach((team, idx) => {
+                document.getElementById('ltb').innerHTML += `
+                    <tr class="${team.isPlayer?'player-team-row':''}">
+                        <td>${idx + 1}</td>
+                        <td class="text-left-col">${team.logo} ${team.name}</td>
+                        <td>${team.p}</td>
+                        <td>${team.w}</td>
+                        <td>${team.d}</td>
+                        <td>${team.l}</td>
+                        <td>${team.gd}</td>
+                        <td><strong>${team.pts}</strong></td>
+                    </tr>`;
+            });
+        }
+
+        function renderScheduleTab() {
+            let html = '';
+            gameState.schedule.forEach(rnd => {
+                let displayStyle = (rnd.roundNum - 1 <= gameState.matchday + 1) ? "block" : "none"; 
+                html += `<div style="display:${displayStyle}; margin-bottom:12px;">
+                    <div class="sched-round-header"><span>Matchday ${rnd.roundNum}</span> <span style="font-weight:normal; font-size:0.8rem;">${rnd.date}</span></div>`;
+                
+                rnd.matches.forEach(m => {
+                    let isPlayer = (m.home.isPlayer || m.away.isPlayer);
+                    let scoreTxt = m.res ? `${m.res.h} - ${m.res.a}` : 'vs';
+                    html += `<div class="sched-match ${isPlayer?'player-match':''}">
+                        <div style="flex:1; text-align:right; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;">${m.home.name.split(' ')[0]}</div>
+                        <div class="sched-score">${scoreTxt}</div>
+                        <div style="flex:1; text-align:left; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:90px;">${m.away.name.split(' ')[0]}</div>
+                        <div style="width:75px; text-align:right; font-size:0.75rem; color:#888; overflow:hidden;">🏟️ ${m.pitch.substring(0,5)}</div>
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+            if(gameState.matchday >= 11) html += `<h2 style="text-align:center; color:#2e7d32; margin-top:20px;">Season Complete!</h2>`;
+            document.getElementById('schedule-render-area').innerHTML = html;
+        }
+
+        window.advanceSeasonDate = function() {
+            gameState.roster.forEach(p => {
+                p.stats = { ...p.baseStats };
+                p.ovr = Math.round((p.stats.att + p.stats.def + p.stats.phy + p.stats.men) / 4);
+            });
+
+            gameState.date.setDate(gameState.date.getDate() + 7);
+
+            if (gameState.matchday < 11 && Math.random() < 0.30) {
+                triggerIncidentEvent();
+            } else {
+                renderDashboard();
+            }
+        }
+
+        function triggerIncidentEvent() {
+            let pTarget = gameState.roster[Math.floor(Math.random() * gameState.roster.length)];
+            let evObj = weeklyEvents[Math.floor(Math.random() * weeklyEvents.length)];
+            
+            evObj.effect(pTarget);
+
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-card" style="max-width: 440px;">
+                    <h2 style="color: #e65100; font-size: 1.4rem; margin-bottom: 8px;">⚠️ SQUAD INCIDENT LOG</h2>
+                    <h3 style="border-bottom:1px solid #eee; padding-bottom:8px;">${evObj.title}</h3>
+                    <p style="margin: 15px 0; font-size: 0.95rem; line-height: 1.5; text-align: left;">
+                        <strong>${pTarget.name}</strong> ${evObj.desc}
+                    </p>
+                    <div style="background:#fff3e0; padding:10px; border-radius:6px; font-size:0.85rem; color:#e65100; font-weight:bold; margin-bottom:15px; text-align:left;">
+                        📉 Tactical Impact: Attributes degraded until the end of this round's fixtures.
+                    </div>
+                    <button class="action-btn" onclick="this.parentElement.parentElement.remove(); renderDashboard();" style="width:100%;">Dealt With</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function renderDashboard() {
+            document.getElementById('dash-team-name').innerText = gameState.teamName; 
+            document.getElementById('dash-logo').innerText = gameState.logo;
+            document.getElementById('dash-squad-size').innerText = gameState.roster.length;
+            document.getElementById('ui-finances').innerText = `${gameState.finances.toLocaleString()} CZK`;
+            
+            document.getElementById('dash-date-text').innerText = `Date: ${gameState.date.getDate()}. ${gameState.date.getMonth()+1}. ${gameState.date.getFullYear()}`;
+
+            let isMatchday = isCurrentDateMatchday();
+            document.getElementById('match-actions').style.display = isMatchday ? 'flex' : 'none';
+            document.getElementById('btn-advance').style.display = isMatchday ? 'none' : 'block';
+            document.getElementById('dash-status-msg').innerText = isMatchday ? "Matchday!" : "Off-season / Training week";
+
+            if(gameState.matchday >= 11) {
+                document.getElementById('match-actions').style.display = 'none';
+                document.getElementById('btn-advance').style.display = 'none';
+                document.getElementById('dash-status-msg').innerText = "Season Complete";
+            }
+
+            const sideMatrixBody = document.getElementById('sidebar-matrix-body'); 
+            sideMatrixBody.innerHTML = ''; 
+            
+            let sortedRoster = [...gameState.roster].sort((a, b) => b.goals - a.goals || b.assists - a.assists || b.ovr - a.ovr);
+            
+            sortedRoster.forEach(p => {
+                sideMatrixBody.innerHTML += `
+                    <tr style="cursor:pointer;" onclick="openPlayerCard('${p.id}')">
+                        <td style="padding:6px 4px;"><span class="player-pos pos-${p.position}">${p.position}</span></td>
+                        <td style="font-weight:600; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;">${p.name.split(' ')[0]} ${p.name.split(' ')[1]?p.name.split(' ')[1].substring(0,1)+'.':''}</td>
+                        <td style="text-align:center; font-weight:bold; color:#d32f2f;">${p.goals}</td>
+                        <td style="text-align:center; font-weight:bold; color:#1976d2;">${p.assists}</td>
+                        <td style="text-align:center; font-weight:bold; background:#f5f5f5; border-radius:4px; font-size:0.8rem;">${p.ovr}</td>
+                    </tr>
+                `;
+            });
+            
+            renderDashboardTable(); 
+            renderScheduleTab();
+        }
+
+        function openPlayerCard(id) {
+            let p = gameState.roster.find(x => x.id === id); if(!p) return;
+            document.getElementById('modal-p-name').innerText = p.name; document.getElementById('modal-p-pos').innerText = p.position; document.getElementById('modal-p-pos').className = `modal-pos-tag pos-${p.position}`;
+            document.getElementById('modal-p-ovr').innerText = p.ovr; document.getElementById('modal-s-att').innerText = Math.floor(p.stats.att); document.getElementById('modal-s-def').innerText = Math.floor(p.stats.def); document.getElementById('modal-s-phy').innerText = Math.floor(p.stats.phy); document.getElementById('modal-s-men').innerText = Math.floor(p.stats.men);
+            document.getElementById('player-modal').classList.remove('hidden');
+        }
+
+        function renderTacticsRoster() {
+            const listEl = document.getElementById('roster-list-tactics'); listEl.innerHTML = '';
+            const fieldedIds = Object.values(tacticalLineup).filter(id => id !== null);
+            gameState.roster.forEach(p => {
+                const isFielded = fieldedIds.includes(p.id);
+                const row = document.createElement('div'); row.className = `player-row ${isFielded ? 'fielded-assigned' : ''}`; row.draggable = !isFielded; 
+                row.innerHTML = `<span class="player-pos pos-${p.position}">${p.position}</span><span class="player-name">${p.name}</span><span class="player-ovr-badge">${p.ovr}</span>`;
+                row.addEventListener('dragstart', () => { activeDraggedPlayerId = p.id; }); row.addEventListener('dragend', () => { activeDraggedPlayerId = null; });
+                listEl.appendChild(row);
+            });
+            const slots = document.querySelectorAll('#football-pitch .pitch-slot');
+            slots.forEach(slot => {
+                const posKey = slot.getAttribute('data-position'); const playerId = tacticalLineup[posKey];
+                if (playerId !== null) { let player = gameState.roster.find(p => p.id === playerId); slot.classList.add('occupied'); slot.innerHTML = `<span class="slot-role-title">${posKey.toUpperCase()}</span><div class="slot-player-name">${player.name.split(' ')[0]}</div>`; } 
+                else { slot.classList.remove('occupied'); slot.innerHTML = `<span class="slot-role-title">${posKey.toUpperCase()}</span>`; }
+            });
+        }
+
+        document.querySelectorAll('#football-pitch .pitch-slot').forEach(slot => {
+            slot.addEventListener('dragover', (e) => { e.preventDefault(); if (!slot.classList.contains('occupied') && activeDraggedPlayerId !== null) slot.classList.add('drag-over'); });
+            slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+            slot.addEventListener('drop', () => { slot.classList.remove('drag-over'); const posKey = slot.getAttribute('data-position'); if (activeDraggedPlayerId !== null && !slot.classList.contains('occupied')) { tacticalLineup[posKey] = activeDraggedPlayerId; renderTacticsRoster(); } });
+        });
+        document.getElementById('formation-select').addEventListener('change', (e) => { gameState.form = e.target.value; const mapping = layouts[e.target.value]; if(!mapping) return; Object.keys(mapping).forEach(posKey => { const el = document.querySelector(`#football-pitch [data-position="${posKey}"]`); if (el) { el.style.top = `${mapping[posKey].t}%`; el.style.left = `${mapping[posKey].l}%`; } }); });
+        document.getElementById('btn-reset-tactics').addEventListener('click', () => { tacticalLineup = { "gk": null, "pos1": null, "pos2": null, "pos3": null, "pos4": null, "pos5": null }; renderTacticsRoster(); });
+
+
+        // ==========================================
+        // PART 2: FULL ROUND SIMULATION & STRATEGY MATRICES
+        // ==========================================
+        
+        // Strategy weight matrices to compute tactical advantage counters
+        function calculateTacticalModifier(attStyle, defMarking) {
+            let mod = 1.0;
+            if (attStyle === "buildup" && defMarking === "zonal") mod = 1.25; // Slow passes pull apart standard spatial blocks
+            if (attStyle === "buildup" && defMarking === "man") mod = 0.80;   // Tight markers suffocate slow build-ups
+            if (attStyle === "longball" && defMarking === "man") mod = 1.35;  // Launches fly directly over aggressive tight tracking units
+            if (attStyle === "longball" && defMarking === "zonal") mod = 0.75; // Positioned zone shields absorb long balls easily
+            if (attStyle === "wings" && defMarking === "zonal") mod = 1.20;    // Overloads the outer flanks of structural zone frameworks
+            if (attStyle === "wings" && defMarking === "man") mod = 0.95;
+            return mod;
+        }
+
+        function resolveFullRound(playerHG, playerAG) {
+            let rnd = gameState.schedule[gameState.matchday];
+            
+            rnd.matches.forEach(m => {
+                let hG, aG;
+                if (m.home.isPlayer || m.away.isPlayer) {
+                    hG = playerHG; aG = playerAG;
+                    
+                    let playerTeamScored = m.home.isPlayer ? hG : aG;
+                    if(playerTeamScored > 0) {
+                        let fieldedIds = Object.values(tacticalLineup).filter(id => id !== null);
+                        for(let g = 0; g < playerTeamScored; g++) {
+                            let randomScorerId = tacticalLineup.pos4 || fieldedIds[Math.floor(Math.random() * fieldedIds.length)];
+                            if(Math.random() > 0.4 && tacticalLineup.pos4) randomScorerId = tacticalLineup.pos4;
+                            let pScorer = gameState.roster.find(p => p.id === randomScorerId);
+                            if(pScorer) pScorer.goals++;
+
+                            if(Math.random() > 0.3) {
+                                let randomAssisterId = tacticalLineup.pos3 || fieldedIds.find(id => id !== randomScorerId);
+                                if(randomAssisterId) {
+                                    let pAssister = gameState.roster.find(p => p.id === randomAssisterId);
+                                    if(pAssister) pAssister.assists++;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // AI vs AI simulation calculations using their structural strategy parameters
+                    let homeMod = calculateTacticalModifier(m.home.attStyle, m.away.defMarking);
+                    let awayMod = calculateTacticalModifier(m.away.attStyle, m.home.defMarking);
+                    
+                    hG = Math.round(getSimGoals() * homeMod); 
+                    aG = Math.round(getSimGoals() * awayMod);
+                }
+                
+                m.res = { h: hG, a: aG };
+                
+                m.home.p++; m.away.p++;
+                m.home.gd += (hG - aG); m.away.gd += (aG - hG);
+                if (hG > aG) { m.home.w++; m.home.pts += 3; m.away.l++; if(m.home.isPlayer) gameState.finances += 1000; }
+                else if (hG < aG) { m.away.w++; m.away.pts += 3; m.home.l++; if(m.away.isPlayer) gameState.finances += 1000; }
+                else { m.home.d++; m.home.pts += 1; m.away.d++; m.away.pts += 1; if(m.home.isPlayer || m.away.isPlayer) gameState.finances += 400; }
+            });
+
+            gameState.league.sort((a, b) => b.pts - a.pts || b.gd - a.gd);
+            gameState.matchday++;
+            renderDashboard(); 
+        }
+
+        document.getElementById('btn-quick-sim').addEventListener('click', () => {
+            if(Object.values(tacticalLineup).includes(null)) return alert("Please fill all 6 slots in the Tactics Board first!");
+            if(gameState.matchday >= 11) return;
+            
+            let rnd = gameState.schedule[gameState.matchday];
+            let pMatch = rnd.matches.find(m => m.home.isPlayer || m.away.isPlayer);
+            
+            let oppTeam = pMatch.home.isPlayer ? pMatch.away : pMatch.home;
+            let playerMod = calculateTacticalModifier(gameState.attStyle, oppTeam.defMarking);
+            let oppMod = calculateTacticalModifier(oppTeam.attStyle, gameState.defMarking);
+
+            let hG = Math.round(getSimGoals() * (pMatch.home.isPlayer ? playerMod : oppMod)); 
+            let aG = Math.round(getSimGoals() * (pMatch.away.isPlayer ? playerMod : oppMod));
+            
+            resolveFullRound(hG, aG);
+            alert(`Matchday Simulated!\n\n${pMatch.home.name} ${hG} - ${aG} ${pMatch.away.name}`);
+        });
+
+        // --- REFEREE POPUP ---
+        function showRefereeMenu(onConfirm) {
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = `
+                <div class="modal-card">
+                    <h3>Match Officials</h3>
+                    <p style="margin: 15px 0;">How would you like to handle refereeing for this match?</p>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                        <button class="action-btn" id="btn-ref-delegate">Delegate Player (-5 OVR Penalty)</button>
+                        <button class="action-btn" id="btn-ref-hire">Hire Official (-600 CZK)</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+
+            document.getElementById('btn-ref-delegate').onclick = () => {
+                let mid = gameState.roster.find(p => p.position === 'MID');
+                if(mid) mid.ovr -= 5; 
+                overlay.remove(); onConfirm(false);
+            };
+
+            document.getElementById('btn-ref-hire').onclick = () => {
+                if(gameState.finances < 600) return alert("Not enough money! You must delegate a player.");
+                gameState.finances -= 600;
+                renderDashboard();
+                overlay.remove(); onConfirm(true);
+            };
+        }
+
+        // --- LIVE ENGINE ---
+        let tmInterval = null; let tmMinute = 0; let tmScore = { home: 0, away: 0 }; let currentLiveTactic = 'f-212';
+        let liveMatchData = null; let isPlayerHome = false;
+        let currentScorerId = null; let currentAssisterId = null;
+
+        function addLog(text, isGoal=false) { let b = document.getElementById('tm-events-box'); b.innerHTML += `<div class="event-log-item ${isGoal?'event-log-goal':''}">${tmMinute}' ${text}</div>`; b.scrollTop = b.scrollHeight; }
+        function addCom(text) { let b = document.getElementById('tm-commentary-box'); b.innerHTML += `<div style="margin-bottom:5px;"><span style="color:#555;">[${String(tmMinute).padStart(2,'0')}:00]</span> ${text}</div>`; b.scrollTop = b.scrollHeight; }
+
+        document.getElementById('btn-play-text-match').addEventListener('click', () => {
+            if(Object.values(tacticalLineup).includes(null)) return alert("Please fill all 6 slots in the Tactics Board first!");
+            if(gameState.matchday >= 11) return;
+
+            showRefereeMenu((hiredOfficial) => {
+                let rnd = gameState.schedule[gameState.matchday];
+                liveMatchData = rnd.matches.find(m => m.home.isPlayer || m.away.isPlayer);
+                isPlayerHome = liveMatchData.home.isPlayer;
+
+                tmMinute = 0; tmScore = { home: 0, away: 0 };
+                document.getElementById('tm-score-home').innerText = '0'; document.getElementById('tm-score-away').innerText = '0'; document.getElementById('tm-clock').innerText = '00:00';
+                document.getElementById('tm-home-name').innerText = liveMatchData.home.abbr; document.getElementById('tm-away-name').innerText = liveMatchData.away.abbr;
+                
+                document.getElementById('tm-events-box').innerHTML = '<h4>Match Events</h4>'; 
+                let refText = hiredOfficial ? "The club has brought in an official for this fixture." : "The teams have agreed to provide a player-referee today.";
+                document.getElementById('tm-commentary-box').innerHTML = `<h4>Live Commentary</h4><div style="color: #666;">Welcome to Matchday ${rnd.roundNum} at Hřiště ${liveMatchData.pitch}. ${refText}</div>`;
+                
+                let b = document.getElementById('btn-tm-control'); b.innerText = "Blow Whistle"; b.style.backgroundColor = "#4CAF50"; b.onclick = startMatchHalf; b.classList.remove('hidden');
+                
+                changeLiveTactic(gameState.form || 'f-212');
+                switchScreen(screens.dashboard, screens.match);
+            });
+        });
+
+        window.changeLiveTactic = function(t) { currentLiveTactic = t; ['f-212', 'f-131', 'f-311'].forEach(k => document.getElementById(`btn-tac-${k}`)?.classList.remove('active-tactic')); document.getElementById(`btn-tac-${t}`)?.classList.add('active-tactic'); addCom(`Manager switches to ${t.toUpperCase()}.`); };
+        window.startMatchHalf = function() { document.getElementById('btn-tm-control').classList.add('hidden'); if(tmMinute===0) { addLog('Kick-off!'); addCom('We are underway!'); } else { addLog('Second half starts.'); } tmInterval = setInterval(matchTick, 800); };
+
+        function matchTick() {
+            tmMinute++; document.getElementById('tm-clock').innerText = `${String(tmMinute).padStart(2,'0')}:00`;
+            if (tmMinute === 30) { clearInterval(tmInterval); addLog('Half-Time.'); let b = document.getElementById('btn-tm-control'); b.innerText = "Start 2nd Half"; b.style.backgroundColor = "#ff9800"; b.classList.remove('hidden'); return; }
+            if (tmMinute >= 60) { 
+                clearInterval(tmInterval); addLog('Full-Time.'); 
+                let b = document.getElementById('btn-tm-control'); b.innerText = "Return to Dashboard"; b.style.backgroundColor = "#d32f2f"; 
+                b.onclick = () => { 
+                    resolveFullRound(tmScore.home, tmScore.away); 
+                    switchScreen(screens.match, screens.dashboard); 
+                }; 
+                b.classList.remove('hidden'); return; 
+            }
+
+            // Tactical adjustments incorporated directly inside the tick frequency checks
+            let oppTeam = isPlayerHome ? liveMatchData.away : liveMatchData.home;
+            let homeAttStyle = isPlayerHome ? gameState.attStyle : oppTeam.attStyle;
+            let awayAttStyle = !isPlayerHome ? gameState.attStyle : oppTeam.attStyle;
+            let homeDefMarking = isPlayerHome ? gameState.defMarking : oppTeam.defMarking;
+            let awayDefMarking = !isPlayerHome ? gameState.defMarking : oppTeam.defMarking;
+
+            let attackChance = 0.30;
+            let homeGoalThreshold = 0.45 * calculateTacticalModifier(homeAttStyle, awayDefMarking);
+            let awayGoalThreshold = 0.45 * calculateTacticalModifier(awayAttStyle, homeDefMarking);
+
+            if (Math.random() < attackChance) { 
+                let homeAttacks = Math.random() > 0.5;
+                let converted = homeAttacks ? (Math.random() < homeGoalThreshold) : (Math.random() < awayGoalThreshold);
+                
+                if (converted) { 
+                    let scorerName = ""; let isPlayerScoring = (homeAttacks === isPlayerHome);
+                    if (isPlayerScoring) { 
+                        currentScorerId = tacticalLineup.pos4 || Object.values(tacticalLineup).find(id => id !== null);
+                        currentAssisterId = tacticalLineup.pos3 || Object.values(tacticalLineup).find(id => id !== currentScorerId && id !== null);
+                        scorerName = gameState.roster.find(p => p.id === currentScorerId)?.name || "Striker"; 
+                    } else { 
+                        currentScorerId = null; currentAssisterId = null;
+                        scorerName = oppTeam.roster[4]?.name || "Opponent"; 
+                    }
+                    
+                    trigger2DHighlight(homeAttacks?'home':'away', scorerName, () => { 
+                        if (isPlayerScoring) {
+                            let pScorer = gameState.roster.find(p => p.id === currentScorerId);
+                            if(pScorer) pScorer.goals++;
+                            let pAssister = gameState.roster.find(p => p.id === currentAssisterId);
+                            if(pAssister) pAssister.assists++;
+                        }
+
+                        if (homeAttacks) { tmScore.home++; document.getElementById('tm-score-home').innerText = tmScore.home; } 
+                        else { tmScore.away++; document.getElementById('tm-score-away').innerText = tmScore.away; }
+                        let tName = homeAttacks ? liveMatchData.home.abbr : liveMatchData.away.abbr;
+                        addLog(`GOAL! ${scorerName} scores for ${tName}!`, true); addCom(`${scorerName} finishes beautifully!`); 
+                    });
+                } else addCom(`Fierce shot by ${homeAttacks?liveMatchData.home.abbr:liveMatchData.away.abbr}, but it flashes just wide of the post!`);
+            } else if(Math.random() < 0.25) addCom("Intense scrap for the ball in midfield...");
+        }
+
+        // --- ADVANCED 2D AGENT MATCH ENGINE (TACTICS DRIVEN) ---
+        let fmAnimId;
+        
+        function trigger2DHighlight(scoringSide, scorerName, successCallback) {
+            clearInterval(tmInterval); 
+            document.getElementById('highlight-overlay').classList.remove('hidden');
+            document.getElementById('goal-flash-text').style.opacity = '0';
+            
+            let cv = document.getElementById('highlight-canvas');
+            let ctx = cv.getContext('2d');
+            const pitch = { w: 600, h: 350 };
+            
+            let isHome = scoringSide === 'home';
+            let dir = isHome ? 1 : -1;
+            let goalX = isHome ? 580 : 20;
+
+            let isPlayerAttacking = (isHome && isPlayerHome) || (!isHome && !isPlayerHome);
+            let oppTeam = isPlayerHome ? liveMatchData.away : liveMatchData.home;
+
+            // Resolve actual runtime tactical styles
+            let attStyle = isPlayerAttacking ? gameState.attStyle : oppTeam.attStyle;
+            let defMarking = !isPlayerAttacking ? gameState.defMarking : oppTeam.defMarking;
+
+            let attTactic = isPlayerAttacking ? currentLiveTactic : "f-212";
+            let defTactic = !isPlayerAttacking ? currentLiveTactic : "f-212";
+
+            let attColor = isHome ? liveMatchData.home.colors.home : liveMatchData.away.colors.home;
+            let defColor = isHome ? liveMatchData.away.colors.home : liveMatchData.home.colors.home;
+
+            let agents = [];
+            
+            agents.push({ id:'gk_d', role:'gk', x: goalX - dir*20, y: 175, tx: goalX - dir*20, ty: 175, c: defColor, isAtt: false, vx:0, vy:0 });
+            agents.push({ id:'gk_a', role:'gk', x: (isHome?20:580) + dir*20, y: 175, tx: (isHome?20:580) + dir*20, ty: 175, c: attColor, isAtt: true, vx:0, vy:0 });
+
+            Object.keys(layouts[attTactic]).forEach(pos => {
+                let l = layouts[attTactic][pos];
+                let startX = (isHome ? l.l - 15 : 100 - l.l + 15) / 100 * pitch.w; 
+                let targetX = (isHome ? l.l : 100 - l.l) / 100 * pitch.w;
+                
+                // If attacking style is down the wings, push flank targets outwards
+                let targetY = (l.t / 100) * pitch.h;
+                if(attStyle === "wings") {
+                    if (pos === "pos1" || pos === "pos4") targetY = 35;
+                    if (pos === "pos2" || pos === "pos5") targetY = 315;
+                }
+
+                agents.push({ id:'a_'+pos, role: pos, x: startX, y: (l.t/100)*pitch.h, tx: targetX, ty: targetY, c: attColor, isAtt: true, vx:0, vy:0 });
+            });
+            
+            Object.keys(layouts[defTactic]).forEach(pos => {
+                let l = layouts[defTactic][pos];
+                let targetX = (isHome ? l.l : 100 - l.l) / 100 * pitch.w;
+                agents.push({ id:'d_'+pos, role: pos, x: targetX + dir*25, y: (l.t/100)*pitch.h, tx: targetX, ty: (l.t/100)*pitch.h, c: defColor, isAtt: false, vx:0, vy:0 });
+            });
+
+            let scorerObj = agents.find(a => a.id === 'a_pos4') || agents.find(a => a.isAtt && a.role !== 'gk');
+            let assisterObj = agents.find(a => a.id === 'a_pos3') || agents.find(a => a.isAtt && a.role !== 'gk' && a.id !== scorerObj.id);
+
+            // Handle start positions according to tactical scripts
+            if(attStyle === "longball") {
+                assisterObj = agents.find(a => a.id === 'a_pos1' || a.id === 'a_pos2') || assisterObj;
+            }
+
+            let ball = { x: assisterObj.x, y: assisterObj.y, vx: 0, vy: 0, owner: assisterObj };
+            let state = 0; 
+            let ticks = 0;
+
+            function renderEngine() {
+                ctx.clearRect(0,0,pitch.w,pitch.h);
+                
+                // Sector Line Guides on Canvas Background
+                ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 2; ctx.setLineDash([5, 5]);
+                ctx.beginPath(); ctx.moveTo(200, 0); ctx.lineTo(200, pitch.h); ctx.moveTo(400, 0); ctx.lineTo(400, pitch.h); ctx.stroke(); ctx.setLineDash([]);
+
+                ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(300, 175, 50, 0, Math.PI*2); ctx.stroke();
+                ctx.strokeRect(0, 75, 100, 200); ctx.strokeRect(500, 75, 100, 200);
+                ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fillRect(0, 125, 20, 100); ctx.fillRect(580, 125, 20, 100);
+
+                // Defending targets updated dynamically under Man Marking logic rules
+                if (defMarking === "man") {
+                    agents.forEach(d => {
+                        if (!d.isAtt && d.role !== 'gk') {
+                            // Find corresponding attacker slot to stalk tightly
+                            let pairedAttacker = agents.find(a => a.isAtt && a.role === d.role);
+                            if(pairedAttacker) {
+                                d.tx = pairedAttacker.x - dir * 18;
+                                d.ty = pairedAttacker.y;
+                            }
+                        }
+                    });
+                }
+
+                agents.forEach(a => {
+                    a.vx += (a.tx - a.x) * 0.03;
+                    a.vy += (a.ty - a.y) * 0.03;
+                    
+                    a.vx += (Math.random() - 0.5) * 0.6;
+                    a.vy += (Math.random() - 0.5) * 0.6;
+
+                    a.vx *= 0.85; a.vy *= 0.85;
+                    a.x += a.vx; a.y += a.vy;
+
+                    ctx.fillStyle = a.c; ctx.beginPath(); ctx.arc(a.x, a.y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1; ctx.stroke();
+                    
+                    if(a.id === scorerObj.id || a.id === assisterObj.id) {
+                        ctx.strokeStyle = "rgba(255,0,0,0.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(a.x, a.y, 13, 0, Math.PI*2); ctx.stroke();
+                    }
+                });
+
+                if (state === 0) {
+                    if(ticks % 15 === 0) {
+                        agents.forEach(a => { if(a.isAtt && a.role !== 'gk') a.tx += dir * (attStyle === "longball" ? 1 : 4); });
+                    }
+                    ball.x = assisterObj.x + dir*8; ball.y = assisterObj.y;
+                    
+                    let buildupTrigger = (attStyle === "longball" ? 25 : 70);
+                    if (ticks > buildupTrigger) {
+                        state = 1; 
+                        ball.owner = null;
+                        if(attStyle === "longball") {
+                            document.getElementById('highlight-desc-text').innerText = `Deep route long ball launched over the top...`;
+                        } else if(attStyle === "wings") {
+                            document.getElementById('highlight-desc-text').innerText = `Winger delivers a sharp sweeping cross into the box...`;
+                        } else {
+                            document.getElementById('highlight-desc-text').innerText = `Beautiful through ball to ${scorerName}...`;
+                        }
+                    }
+                } else if (state === 1) {
+                    let dx = scorerObj.x - ball.x;
+                    let dy = scorerObj.y - ball.y;
+                    let dist = Math.hypot(dx, dy);
+                    
+                    let ballSpeed = (attStyle === "longball" ? 11.5 : 8.0);
+                    if (dist > 12) {
+                        ball.x += (dx / dist) * ballSpeed;
+                        ball.y += (dy / dist) * ballSpeed;
+                        scorerObj.tx += dir * 2.5; 
+                    } else {
+                        state = 2; 
+                        ball.owner = scorerObj;
+                        document.getElementById('highlight-desc-text').innerText = `${scorerName} takes the shot!`;
+                        ball.vx = dir * 15; 
+                        ball.vy = ((pitch.h / 2) - scorerObj.y) * 0.12 + (Math.random() - 0.5) * 4; 
+                    }
+                } else if (state === 2) {
+                    ball.x += ball.vx; ball.y += ball.vy;
+                    
+                    if (ball.y < 12) ball.y = 12;
+                    if (ball.y > pitch.h - 12) ball.y = pitch.h - 12;
+
+                    let gk = agents.find(a=>a.id==='gk_d');
+                    gk.ty = ball.y; 
+                    gk.vx = dir * 2;
+
+                    if ((isHome && ball.x >= 575) || (!isHome && ball.x <= 25)) {
+                        state = 3; ticks = 0;
+                        document.getElementById('goal-flash-text').style.opacity = '1';
+                    }
+                } else if (state === 3) {
+                    scorerObj.tx = isHome ? 600 : 0; 
+                    scorerObj.ty = 350; 
+                    
+                    if (ticks > 90) {
+                        cancelAnimationFrame(fmAnimId);
+                        document.getElementById('highlight-overlay').classList.add('hidden');
+                        successCallback();
+                        tmInterval = setInterval(matchTick, 800); 
+                        return;
+                    }
+                }
+
+                ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(ball.x, ball.y, 4, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "#000"; ctx.lineWidth = 1; ctx.stroke();
+
+                ticks++;
+                fmAnimId = requestAnimationFrame(renderEngine);
+            }
+            fmAnimId = requestAnimationFrame(renderEngine);
+        }
+    </script>
+</body>
+</html>
